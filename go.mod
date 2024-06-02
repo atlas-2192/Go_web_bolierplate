@@ -5,6 +5,7 @@ go 1.22.3
 require (
 	github.com/a-h/templ v0.2.707
 	github.com/go-chi/chi/v5 v5.0.12
+	github.com/jackc/envconf v0.0.0-20240602124909-416ddece9883
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.0
 	golang.org/x/sys v0.20.0

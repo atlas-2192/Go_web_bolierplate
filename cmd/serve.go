@@ -2,16 +2,20 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 
+	"github.com/jackc/envconf"
 	"github.com/jackc/web-starter-app/server"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
 
 var shutdownSignals = []os.Signal{os.Interrupt}
+var serveEnvconf = envconf.New()
 
 // serveCmd represents the serve command.
 var serveCmd = &cobra.Command{
@@ -20,8 +24,9 @@ var serveCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		startHTTPServer, _ := cmd.Flags().GetBool("http")
-		listenAddress, _ := cmd.Flags().GetString("listen-address")
-		logFormat, _ := cmd.Flags().GetString("log-format")
+
+		listenAddress := serveEnvconf.Value("LISTEN_ADDRESS")
+		logFormat := serveEnvconf.Value("LOG_FORMAT")
 
 		processCtx, processCancel := context.WithCancel(context.Background())
 
@@ -71,9 +76,16 @@ var serveCmd = &cobra.Command{
 }
 
 func init() {
+	serveEnvconf.Register(envconf.Item{Name: "LISTEN_ADDRESS", Default: "127.0.0.1:8080", Description: "The address to listen on for HTTP requests."})
+	serveEnvconf.Register(envconf.Item{Name: "LOG_FORMAT", Default: "json", Description: "Log format (json or console)"})
+	long := &strings.Builder{}
+	long.WriteString("Run the server.\n\nConfigure with the following environment variables:\n\n")
+	for _, item := range serveEnvconf.Items() {
+		long.WriteString(fmt.Sprintf("  %s\n    Default: %s\n    %s\n\n", item.Name, item.Default, item.Description))
+	}
+	serveCmd.Long = long.String()
+
 	rootCmd.AddCommand(serveCmd)
 
 	serveCmd.Flags().Bool("http", true, "Serve HTTP requests.")
-	serveCmd.Flags().StringP("listen-address", "l", "127.0.0.1:8080", "The address to listen on for HTTP requests.")
-	serveCmd.Flags().String("log-format", "json", "Log format (json or console)")
 }
