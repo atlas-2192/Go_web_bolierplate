@@ -1,1 +1,3 @@
 /bin/web-starter-app
+/view/.last_templ_generate
+/view/*_templ.go

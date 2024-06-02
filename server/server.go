@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/web-starter-app/view"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
 )
@@ -51,7 +52,7 @@ func NewServer(
 	router.Use(middleware.Recoverer)
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello, world!"))
+		view.Hello("world").Render(r.Context(), w)
 	})
 
 	return server, nil
