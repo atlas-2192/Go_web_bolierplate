@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/jackc/envconf"
+	"github.com/jackc/web-starter-app/db"
 	"github.com/jackc/web-starter-app/server"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -25,12 +26,15 @@ var serveCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		startHTTPServer, _ := cmd.Flags().GetBool("http")
 
+		databaseURL := serveEnvconf.Value("DATABASE_URL")
 		listenAddress := serveEnvconf.Value("LISTEN_ADDRESS")
 		logFormat := serveEnvconf.Value("LOG_FORMAT")
 
 		processCtx, processCancel := context.WithCancel(context.Background())
 
-		setupLogger(logFormat)
+		logger := setupLogger(logFormat)
+		dbpool := setupPGXConnPool(processCtx, databaseURL, logger)
+		dbsession := db.NewSession(dbpool)
 
 		interruptChan := make(chan os.Signal, 1)
 		signal.Notify(interruptChan, shutdownSignals...)
@@ -45,6 +49,7 @@ var serveCmd = &cobra.Command{
 		if startHTTPServer {
 			server, err := server.NewServer(
 				listenAddress,
+				dbsession,
 				zerolog.Ctx(processCtx),
 			)
 			if err != nil {
@@ -76,7 +81,8 @@ var serveCmd = &cobra.Command{
 }
 
 func init() {
-	serveEnvconf.Register(envconf.Item{Name: "LISTEN_ADDRESS", Default: "127.0.0.1:8080", Description: "The address to listen on for HTTP requests."})
+	serveEnvconf.Register(envconf.Item{Name: "DATABASE_URL", Default: "", Description: "The PostgreSQL connection string"})
+	serveEnvconf.Register(envconf.Item{Name: "LISTEN_ADDRESS", Default: "127.0.0.1:8080", Description: "The address to listen on for HTTP requests"})
 	serveEnvconf.Register(envconf.Item{Name: "LOG_FORMAT", Default: "json", Description: "Log format (json or console)"})
 	long := &strings.Builder{}
 	long.WriteString("Run the server.\n\nConfigure with the following environment variables:\n\n")

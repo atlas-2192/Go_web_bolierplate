@@ -1,5 +1,8 @@
 package view
 
-templ Hello(name string) {
+import "time"
+
+templ Hello(name string, now time.Time) {
   <div>Hello, { name }!</div>
+  <div>It is { now.Format("15:04:05") } in the database.</div>
 }

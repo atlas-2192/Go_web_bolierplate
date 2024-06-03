@@ -7,20 +7,32 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/web-starter-app/db"
 	"github.com/jackc/web-starter-app/view"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
+)
+
+// Use when setting something though the request context.
+type ctxRequestKey int
+
+const (
+	_ ctxRequestKey = iota
+	ctxKeyServer
 )
 
 type Server struct {
 	handler       http.Handler
 	listenAddress string
 	server        *http.Server
-	logger        *zerolog.Logger
+
+	dbsession *db.Session
+	logger    *zerolog.Logger
 }
 
 func NewServer(
 	listenAddress string,
+	dbsession *db.Session,
 	logger *zerolog.Logger,
 ) (*Server, error) {
 
@@ -29,6 +41,7 @@ func NewServer(
 	server := &Server{
 		handler:       router,
 		listenAddress: listenAddress,
+		dbsession:     dbsession,
 		logger:        logger,
 	}
 
@@ -51,8 +64,18 @@ func NewServer(
 
 	router.Use(middleware.Recoverer)
 
+	router.Use(setContextValue(ctxKeyServer, server))
+
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		view.Hello("world").Render(r.Context(), w)
+		ctx := r.Context()
+		server := ctx.Value(ctxKeyServer).(*Server)
+		now, err := db.GetCurrentTime(ctx, server.dbsession)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		view.Hello("world", now).Render(r.Context(), w)
 	})
 
 	return server, nil
@@ -87,4 +110,17 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// setContextValue returns a middleware handler that sets a value in the request context.
+func setContextValue(key ctxRequestKey, value any) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			ctx = context.WithValue(ctx, key, value)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
+
+		return http.HandlerFunc(fn)
+	}
 }
