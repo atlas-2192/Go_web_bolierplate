@@ -26,16 +26,19 @@ var serveCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		startHTTPServer, _ := cmd.Flags().GetBool("http")
 
+		// Get config from the environment.
 		databaseURL := serveEnvconf.Value("DATABASE_URL")
 		listenAddress := serveEnvconf.Value("LISTEN_ADDRESS")
 		logFormat := serveEnvconf.Value("LOG_FORMAT")
 
+		// processCtx and processCancel are used to signal when the process is shutting down.
 		processCtx, processCancel := context.WithCancel(context.Background())
 
 		logger := setupLogger(logFormat)
 		dbpool := setupPGXConnPool(processCtx, databaseURL, logger)
 		dbsession := db.NewSession(dbpool)
 
+		// Listen for shutdown signals. When a signal is received, cancel the processCtx.
 		interruptChan := make(chan os.Signal, 1)
 		signal.Notify(interruptChan, shutdownSignals...)
 		go func() {
@@ -45,7 +48,10 @@ var serveCmd = &cobra.Command{
 			processCancel()
 		}()
 
+		// The program can run in more than one worker at a time. For example, it may run an HTTP server and a job worker.
+		// Use a WaitGroup to wait for all workers to finish before exiting.
 		wg := &sync.WaitGroup{}
+
 		if startHTTPServer {
 			server, err := server.NewServer(
 				listenAddress,
