@@ -39,3 +39,20 @@ task :rerun do
     "--ignore", "**/*_test.go",
     "rake", "run"
 end
+
+directory "tmp/test"
+
+file "tmp/test/.databases-prepared" => FileList["tmp/test", "postgresql/**/*.sql", "test/testdata/*.sql"] do
+  sh "psql -f test/setup_test_databases.sql > /dev/null"
+  sh "touch tmp/test/.databases-prepared"
+end
+
+desc "Perform all preparation necessary to run tests"
+task "test:prepare" => [:build, "tmp/test/.databases-prepared"]
+
+desc "Run all tests"
+task test: "test:prepare" do
+  sh "go test ./..."
+end
+
+task default: :test

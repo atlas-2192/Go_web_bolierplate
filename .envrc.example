@@ -1,2 +1,8 @@
 export LISTEN_ADDRESS=127.0.0.1:8080
 export LOG_FORMAT=console
+
+export TEST_DATABASE=web_starter_app_test
+export TEST_DATABASE_COUNT=8
+
+export TERN_CONFIG=postgresql/tern.conf
+export TERN_MIGRATIONS=postgresql/migrations
