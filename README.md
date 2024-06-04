@@ -1,5 +1,7 @@
 # Web Starter App
 
+Warning: This is not ready for public use.
+
 This is a starter web application. It is not a web framework. It is how I prefer to start web applications.
 
 ## Prerequisites
