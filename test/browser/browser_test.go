@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 	var err error
 	TestBrowserManager, err = testbrowser.NewManager(testbrowser.ManagerConfig{})
 	if err != nil {
-		fmt.Println("Failed to initialize TestBrowserManager")
+		fmt.Println("Failed to initialize TestBrowserManager", err)
 		os.Exit(1)
 	}
 

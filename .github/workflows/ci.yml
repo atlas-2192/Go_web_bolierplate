@@ -9,10 +9,20 @@ on:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-24.04
+    # rod / chrome fails on ubuntu-24.04 with following error:
+    #
+    # Failed to initialize TestBrowserManager connect to browser failed: [launcher] Failed to get the debug url:
+    # [0605/002446.197692:FATAL:zygote_host_impl_linux.cc(126)] No usable sandbox! Update your kernel or see
+    # https://chromium.googlesource.com/chromium/src/+/main/docs/linux/suid_sandbox_development.md for more information
+    # on developing with the SUID sandbox. If you want to live dangerously and need an immediate workaround, you can try
+    # using --no-sandbox.
+    #
+    # https://github.com/go-rod/rod/issues/1070
+    #
+    # But it works with ubuntu-22.04
+    runs-on: ubuntu-22.04
 
     env:
-      PGDATABASE: web_starter_app_test
       TERN_CONFIG: postgresql/tern.conf
       TERN_MIGRATIONS: postgresql/migrations
       LISTEN_ADDRESS: "127.0.0.1:8080"
@@ -26,6 +36,7 @@ jobs:
           sudo systemctl start postgresql.service
           pg_isready
           sudo -u postgres createuser -s runner
+          createdb runner
 
       - name: Check out code
         uses: actions/checkout@v4
@@ -48,6 +59,12 @@ jobs:
 
       - name: Copy tern.conf
         run: cp .github/workflows/ci/tern.conf postgresql/tern.conf
+
+      - name: Install templ
+        run: curl -L https://github.com/a-h/templ/releases/download/v0.2.707/templ_Linux_x86_64.tar.gz > templ.tar.gz && tar -zxf templ.tar.gz -C /usr/local/bin/
+
+      - name: Create test database
+        run: createdb $TEST_DATABASE
 
       # - name: Setup upterm session
       #   uses: lhotari/action-upterm@v1
