@@ -18,6 +18,8 @@ var rootCmd = &cobra.Command{
 	Use:   "setup_test_databases",
 	Short: "Creates test databases for web-starter-app",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+
 		ctx := context.Background()
 
 		devConn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))
