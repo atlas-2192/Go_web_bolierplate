@@ -27,7 +27,7 @@ jobs:
       TERN_MIGRATIONS: postgresql/migrations
       LISTEN_ADDRESS: "127.0.0.1:8080"
       LOG_FORMAT: console
-      TEST_DATABASE: web_starter_app_test
+      TEST_PGDATABASE: web_starter_app_test
       TEST_DATABASE_COUNT: 1
 
     steps:
