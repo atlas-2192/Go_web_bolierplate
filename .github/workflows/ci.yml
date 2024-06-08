@@ -63,9 +63,6 @@ jobs:
       - name: Install templ
         run: curl -L https://github.com/a-h/templ/releases/download/v0.2.707/templ_Linux_x86_64.tar.gz > templ.tar.gz && tar -zxf templ.tar.gz -C /usr/local/bin/
 
-      - name: Create test database
-        run: createdb $TEST_DATABASE
-
       # - name: Setup upterm session
       #   uses: lhotari/action-upterm@v1
       # with:
