@@ -24,6 +24,12 @@ var baseBrowser *rod.Browser
 var TestBrowserManager *testbrowser.Manager
 
 func TestMain(m *testing.M) {
+	err := testutil.CopyTestPGEnvironmentVariables()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to copy TEST_PG environment variables: %v", err)
+		os.Exit(1)
+	}
+
 	maxConcurrent := 1
 	if n, err := strconv.ParseInt(os.Getenv("MAX_CONCURRENT_BROWSER_TESTS"), 10, 32); err == nil {
 		maxConcurrent = int(n)
@@ -36,7 +42,6 @@ func TestMain(m *testing.M) {
 
 	TestDBManager = testutil.InitTestDBManager(m)
 
-	var err error
 	TestBrowserManager, err = testbrowser.NewManager(testbrowser.ManagerConfig{})
 	if err != nil {
 		fmt.Println("Failed to initialize TestBrowserManager", err)

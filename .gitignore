@@ -1,5 +1,6 @@
 /.envrc
 /bin/web-starter-app
+/bin/setup_test_databases
 /postgresql/tern.conf
 /tmp/*
 /view/.last_templ_generate

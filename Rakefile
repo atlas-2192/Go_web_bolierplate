@@ -42,9 +42,13 @@ end
 
 directory "tmp/test"
 
-file "tmp/test/.databases-prepared" => FileList["tmp/test", "postgresql/**/*.sql", "test/testdata/*.sql"] do
-  sh "psql -f test/setup_test_databases.sql > /dev/null"
+file "tmp/test/.databases-prepared" => FileList["bin/setup_test_databases", "tmp/test", "postgresql/**/*.sql", "test/testdata/*.sql"] do
+  sh "bin/setup_test_databases"
   sh "touch tmp/test/.databases-prepared"
+end
+
+file "bin/setup_test_databases" => FileList["devtools/setup_test_databases/**/*.go"] do
+  sh "go build -o bin/setup_test_databases github.com/jackc/web-starter-app/devtools/setup_test_databases"
 end
 
 desc "Perform all preparation necessary to run tests"
