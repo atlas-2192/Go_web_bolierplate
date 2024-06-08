@@ -133,5 +133,8 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-	rootCmd.Execute()
+	err := rootCmd.Execute()
+	if err != nil {
+		os.Exit(1)
+	}
 }
