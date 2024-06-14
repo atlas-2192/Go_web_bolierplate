@@ -65,12 +65,15 @@ func startServer(t *testing.T) *serverInstanceT {
 	ctx := context.Background()
 	tdb := TestDBManager.AcquireDB(t, ctx)
 
+	logWriter := zerolog.ConsoleWriter{Out: os.Stdout}
+	logger := zerolog.New(logWriter).With().Timestamp().Logger()
+
 	dbpool := tdb.PoolConnect(t, ctx)
 	dbsess := db.NewSession(dbpool)
 	handler, err := server.NewServer(
 		"127.0.0.1:0",
 		dbsess,
-		zerolog.Ctx(ctx),
+		&logger,
 	)
 	require.NoError(t, err)
 

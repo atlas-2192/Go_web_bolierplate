@@ -25,7 +25,6 @@ task build: ["bin/web-starter-app"]
 
 desc "Run web-starter-app"
 task run: :build do
-  ENV["PGUSER"] = ENV["APP_PGUSER"] if ENV.key?("APP_PGUSER")
   exec "bin/web-starter-app", "serve"
 end
 

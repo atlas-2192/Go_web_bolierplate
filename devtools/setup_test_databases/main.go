@@ -21,13 +21,13 @@ var rootCmd = &cobra.Command{
 
 		ctx := context.Background()
 
-		devConn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))
+		devConn, err := pgx.Connect(ctx, "")
 		if err != nil {
 			return fmt.Errorf("connect to development database: %w", err)
 		}
 		defer devConn.Close(ctx)
 
-		testConnConfig, err := pgx.ParseConfig(os.Getenv("DATABASE_URL"))
+		testConnConfig, err := pgx.ParseConfig("")
 		if err != nil {
 			return fmt.Errorf("parse test database URL: %w", err)
 		}
@@ -51,7 +51,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Migrate the test database.
-		ternCmd := exec.Command("tern", "migrate")
+		ternCmd := exec.Command("tern", "migrate", "--database", testConnConfig.Database)
 		ternCmd.Stderr = os.Stderr
 		err = ternCmd.Run()
 		if err != nil {

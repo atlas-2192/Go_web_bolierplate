@@ -29,6 +29,8 @@ jobs:
       LOG_FORMAT: console
       TEST_PGDATABASE: web_starter_app_test
       TEST_DATABASE_COUNT: 1
+      APP_PGUSER: web_starter_app
+      DATABASE_URL: "host=127.0.0.1 user=web_starter_app password=password sslmode=disable"
 
     steps:
       - name: Start and set up PostgreSQL
@@ -65,9 +67,9 @@ jobs:
 
       # - name: Setup upterm session
       #   uses: lhotari/action-upterm@v1
-      # with:
-      ## limits ssh access and adds the ssh public key for the user which triggered the workflow
-      # limit-access-to-actor: true
+      #   with:
+      #     # limits ssh access and adds the ssh public key for the user which triggered the workflow
+      #     limit-access-to-actor: true
 
       - name: Run tests
         run: rake test

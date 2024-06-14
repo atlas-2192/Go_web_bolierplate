@@ -1,7 +1,8 @@
 export LISTEN_ADDRESS=127.0.0.1:8080
 export LOG_FORMAT=console
 
-# The development PostgreSQL is configured via the PG* variables such as PGHOST and PGDATABASE.
+# Set common PostgreSQL config using PG* variables such as PGHOST and PGDATABASE. This user should be privileged enough
+# to create and drop databases and maintain the development and test databases.
 export PGPORT=5022
 export PGDATABASE=web_starter_app_dev
 export PGUSER=postgres
@@ -15,6 +16,9 @@ export TEST_PGDATABASE=web_starter_app_test
 # Tests that mutate the database each run with a separate test database. By default this is the number of CPUs on the
 # host.
 # export TEST_DATABASE_COUNT=8
+
+# The connection string to use when running the application and running the tests.
+export DATABASE_URL="user=$APP_PGUSER"
 
 export TERN_CONFIG=postgresql/tern.conf
 export TERN_MIGRATIONS=postgresql/migrations
