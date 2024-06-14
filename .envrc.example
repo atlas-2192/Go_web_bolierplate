@@ -1,17 +1,15 @@
 export LISTEN_ADDRESS=127.0.0.1:8080
 export LOG_FORMAT=console
 
-# The development PostgreSQL is configured via the PG* variables such as PGHOST and PGDATABASE. In addition,
-# DATABASE_URL can be used to provide a connection string.
-# export PGDATABASE=web_starter_app_dev
-# export DATABASE_URL="statement_timeout=5000"
+# The development PostgreSQL is configured via the PG* variables such as PGHOST and PGDATABASE.
+export PGPORT=5022
+export PGDATABASE=web_starter_app_dev
+export PGUSER=postgres
 
-# The test PostgreSQL databases use the same PostgreSQL environment variables as development with the addition that
-# environment variables that start with TEST_PG will be set as PG. For example, if TEST_PGDATABASE is
-# "web_starter_app_test" then PGDATABASE will be set to "web_starter_app_test" during test runs. In addition,
-# DATABASE_URL is set to TEST_DATABASE_URL if the latter is set.
-#
-# The test database name must end in _test. This is to protect against accidentally dropping a non-test database.
+# The application server connects to PostgreSQL using a non-superuser role.
+export APP_PGUSER=web_starter_app
+
+# The tests use the same connection settings as development with the exception of the database.
 export TEST_PGDATABASE=web_starter_app_test
 
 # Tests that mutate the database each run with a separate test database. By default this is the number of CPUs on the

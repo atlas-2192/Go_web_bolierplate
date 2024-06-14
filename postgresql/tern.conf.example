@@ -1,4 +1,4 @@
 # Database name should be set via PGDATABASE or PGSERVICE environment variables.
 
 [data]
-app_user = web_starter_app
+app_user = {{env "APP_PGUSER"}}

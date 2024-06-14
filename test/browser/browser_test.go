@@ -24,10 +24,12 @@ var baseBrowser *rod.Browser
 var TestBrowserManager *testbrowser.Manager
 
 func TestMain(m *testing.M) {
-	err := testutil.CopyTestPGEnvironmentVariables()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to copy TEST_PG environment variables: %v", err)
-		os.Exit(1)
+	if testPGDatabase := os.Getenv("TEST_PGDATABASE"); testPGDatabase != "" {
+		err := os.Setenv("PGDATABASE", testPGDatabase)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to set PGDATABASE: %v", err)
+			os.Exit(1)
+		}
 	}
 
 	maxConcurrent := 1
@@ -42,6 +44,7 @@ func TestMain(m *testing.M) {
 
 	TestDBManager = testutil.InitTestDBManager(m)
 
+	var err error
 	TestBrowserManager, err = testbrowser.NewManager(testbrowser.ManagerConfig{})
 	if err != nil {
 		fmt.Println("Failed to initialize TestBrowserManager", err)

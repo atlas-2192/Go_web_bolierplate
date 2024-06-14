@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/web-starter-app/test/testutil"
 	"github.com/spf13/cobra"
 )
 
@@ -28,14 +27,12 @@ var rootCmd = &cobra.Command{
 		}
 		defer devConn.Close(ctx)
 
-		err = testutil.CopyTestPGEnvironmentVariables()
-		if err != nil {
-			return err
-		}
-
 		testConnConfig, err := pgx.ParseConfig(os.Getenv("DATABASE_URL"))
 		if err != nil {
 			return fmt.Errorf("parse test database URL: %w", err)
+		}
+		if testPGDatabase := os.Getenv("TEST_PGDATABASE"); testPGDatabase != "" {
+			testConnConfig.Database = testPGDatabase
 		}
 
 		// Ensure test database name ends with _test before dropping it.
@@ -54,7 +51,9 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Migrate the test database.
-		err = exec.Command("tern", "migrate").Run()
+		ternCmd := exec.Command("tern", "migrate")
+		ternCmd.Stderr = os.Stderr
+		err = ternCmd.Run()
 		if err != nil {
 			return fmt.Errorf("tern migrate test database: %w", err)
 		}
