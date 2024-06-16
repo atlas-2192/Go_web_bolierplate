@@ -1,6 +1,7 @@
 /.envrc
 /.postgresql
 /bin/web-starter-app
+/bin/start-web-starter-app-dev.py
 /bin/setup_test_databases
 /postgresql/tern.conf
 /tmp/*

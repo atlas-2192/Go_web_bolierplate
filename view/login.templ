@@ -1,0 +1,9 @@
+package view
+
+templ LoginPage(csrfToken string) {
+  <form method="post" action="/login/submit">
+    <input type="hidden" name="gorilla.csrf.Token" value={csrfToken} />
+    <input type="text" name="username" placeholder="Username" />
+    <button type="submit">Login</button>
+  </form>
+}

@@ -70,10 +70,18 @@ func startServer(t *testing.T) *serverInstanceT {
 
 	dbpool := tdb.PoolConnect(t, ctx)
 	dbsess := db.NewSession(dbpool)
+	csrfKey := make([]byte, 64)
+	cookieAuthenticationKey := make([]byte, 64)
+	cookieEncryptionKey := make([]byte, 32)
+
 	handler, err := server.NewServer(
 		"127.0.0.1:0",
 		dbsess,
 		&logger,
+		csrfKey,
+		false,
+		cookieAuthenticationKey,
+		cookieEncryptionKey,
 	)
 	require.NoError(t, err)
 

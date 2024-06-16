@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"context"
+	"crypto/sha512"
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -30,6 +32,27 @@ var serveCmd = &cobra.Command{
 		databaseURL := serveEnvconf.Value("DATABASE_URL")
 		listenAddress := serveEnvconf.Value("LISTEN_ADDRESS")
 		logFormat := serveEnvconf.Value("LOG_FORMAT")
+
+		digestKey := func(keyName string, minInputLen, outputLen int) []byte {
+			str := serveEnvconf.Value(keyName)
+			if len(str) < minInputLen {
+				fmt.Fprintf(os.Stderr, "%s not set or too short.\n", keyName)
+				os.Exit(1)
+			}
+
+			h := sha512.Sum512([]byte(str))
+			return h[:outputLen]
+		}
+
+		csrfKey := digestKey("CSRF_KEY", 64, 64)
+		cookieAuthenticationKey := digestKey("COOKIE_AUTHENTICATION_KEY", 64, 64)
+		cookieEncryptionKey := digestKey("COOKIE_ENCRYPTION_KEY", 64, 32)
+
+		cookieSecure, err := strconv.ParseBool(serveEnvconf.Value("COOKIE_SECURE"))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "COOKIE_SECURE must be true or false.\n")
+			os.Exit(1)
+		}
 
 		// processCtx and processCancel are used to signal when the process is shutting down.
 		processCtx, processCancel := context.WithCancel(context.Background())
@@ -57,6 +80,10 @@ var serveCmd = &cobra.Command{
 				listenAddress,
 				dbsession,
 				zerolog.Ctx(processCtx),
+				csrfKey,
+				cookieSecure,
+				cookieAuthenticationKey,
+				cookieEncryptionKey,
 			)
 			if err != nil {
 				zerolog.Ctx(processCtx).Fatal().Err(err).Msg("Could not create web server")
@@ -90,6 +117,11 @@ func init() {
 	serveEnvconf.Register(envconf.Item{Name: "DATABASE_URL", Default: "", Description: "The PostgreSQL connection string"})
 	serveEnvconf.Register(envconf.Item{Name: "LISTEN_ADDRESS", Default: "127.0.0.1:8080", Description: "The address to listen on for HTTP requests"})
 	serveEnvconf.Register(envconf.Item{Name: "LOG_FORMAT", Default: "json", Description: "Log format (json or console)"})
+	serveEnvconf.Register(envconf.Item{Name: "CSRF_KEY", Default: "", Description: "Key for CSRF protection"})
+	serveEnvconf.Register(envconf.Item{Name: "COOKIE_SECURE", Default: "true", Description: "Set the Secure flag on cookies"})
+	serveEnvconf.Register(envconf.Item{Name: "COOKIE_AUTHENTICATION_KEY", Default: "", Description: "Key to protect cookies from tampering"})
+	serveEnvconf.Register(envconf.Item{Name: "COOKIE_ENCRYPTION_KEY", Default: "", Description: "Key to protect cookies from being readable by the client"})
+
 	long := &strings.Builder{}
 	long.WriteString("Run the server.\n\nConfigure with the following environment variables:\n\n")
 	for _, item := range serveEnvconf.Items() {

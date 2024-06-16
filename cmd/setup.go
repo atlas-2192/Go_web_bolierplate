@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 
+	pgxuuid "github.com/jackc/pgx-gofrs-uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
@@ -14,6 +16,11 @@ func setupPGXConnPool(ctx context.Context, connString string, logger *zerolog.Lo
 	dbconfig, err := pgxpool.ParseConfig(connString)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to parse database connection string")
+	}
+
+	dbconfig.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+		pgxuuid.Register(conn.TypeMap())
+		return nil
 	}
 
 	// Log PostgreSQL notices.
