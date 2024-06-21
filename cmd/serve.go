@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha512"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -76,8 +77,7 @@ var serveCmd = &cobra.Command{
 		wg := &sync.WaitGroup{}
 
 		if startHTTPServer {
-			server, err := server.NewServer(
-				listenAddress,
+			handler, err := server.NewAppHandler(
 				dbsession,
 				zerolog.Ctx(processCtx),
 				csrfKey,
@@ -86,14 +86,21 @@ var serveCmd = &cobra.Command{
 				cookieEncryptionKey,
 			)
 			if err != nil {
-				zerolog.Ctx(processCtx).Fatal().Err(err).Msg("Could not create web server")
+				zerolog.Ctx(processCtx).Fatal().Err(err).Msg("Could not create HTTP app handler")
+			}
+
+			server := &http.Server{
+				Addr:    listenAddress,
+				Handler: handler,
 			}
 
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				err := server.Serve()
-				if err != nil {
+				zerolog.Ctx(processCtx).Info().Str("listen_address", listenAddress).Msg("Starting HTTP server")
+
+				err := server.ListenAndServe()
+				if err != http.ErrServerClosed {
 					zerolog.Ctx(processCtx).Fatal().Err(err).Msg("HTTP server failed to start")
 				}
 			}()
@@ -102,6 +109,8 @@ var serveCmd = &cobra.Command{
 			go func() {
 				defer wg.Done()
 				<-processCtx.Done()
+				zerolog.Ctx(processCtx).Info().Msg("Stopping HTTP server")
+				server.SetKeepAlivesEnabled(false)
 				err := server.Shutdown(context.Background())
 				if err != nil {
 					zerolog.Ctx(processCtx).Error().Err(err).Msg("HTTP server failed to cleanly shutdown")

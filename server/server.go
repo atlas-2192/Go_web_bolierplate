@@ -25,15 +25,11 @@ type ctxRequestKey int
 
 const (
 	_ ctxRequestKey = iota
-	ctxKeyServer
+	ctxKeyAppHandlerEnv
 	ctxKeySession
 )
 
-type Server struct {
-	handler       http.Handler
-	listenAddress string
-	server        *http.Server
-
+type appHandlerEnv struct {
 	dbsession *db.Session
 	logger    *zerolog.Logger
 
@@ -41,24 +37,21 @@ type Server struct {
 	sessionCookieTemplate *http.Cookie
 }
 
-func NewServer(
-	listenAddress string,
+func NewAppHandler(
 	dbsession *db.Session,
 	logger *zerolog.Logger,
 	csrfKey []byte,
 	secureCookies bool,
 	cookieAuthenticationKey []byte,
 	cookieEncryptionKey []byte,
-) (*Server, error) {
+) (http.Handler, error) {
 
 	router := chi.NewRouter()
 
-	server := &Server{
-		handler:       router,
-		listenAddress: listenAddress,
-		dbsession:     dbsession,
-		logger:        logger,
-		secureCookie:  securecookie.New(cookieAuthenticationKey, cookieEncryptionKey),
+	env := &appHandlerEnv{
+		dbsession:    dbsession,
+		logger:       logger,
+		secureCookie: securecookie.New(cookieAuthenticationKey, cookieEncryptionKey),
 		sessionCookieTemplate: &http.Cookie{
 			Name:     "web-starter-app-session",
 			Path:     "/",
@@ -87,7 +80,7 @@ func NewServer(
 
 	router.Use(middleware.Recoverer)
 
-	router.Use(setContextValue(ctxKeyServer, server))
+	router.Use(setContextValue(ctxKeyAppHandlerEnv, env))
 
 	CSRF := csrf.Protect(csrfKey, csrf.Path("/"), csrf.Secure(secureCookies))
 	router.Use(CSRF)
@@ -102,8 +95,8 @@ func NewServer(
 
 	router.Post("/login/submit", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		server := ctx.Value(ctxKeyServer).(*Server)
-		user, err := db.GetUserByUsername(ctx, server.dbsession, r.FormValue("username"))
+		env := ctx.Value(ctxKeyAppHandlerEnv).(*appHandlerEnv)
+		user, err := db.GetUserByUsername(ctx, env.dbsession, r.FormValue("username"))
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				// TODO - rerender form
@@ -114,7 +107,7 @@ func NewServer(
 			return
 		}
 
-		dbpool := db.DBPool(server.dbsession)
+		dbpool := db.DBPool(env.dbsession)
 		now := time.Now()
 		loginSessionID, err := pgxutil.InsertRowReturning(ctx, dbpool, "login_sessions", map[string]any{
 			"id":                            uuid.Must(uuid.NewV7()),
@@ -139,8 +132,8 @@ func NewServer(
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		server := ctx.Value(ctxKeyServer).(*Server)
-		now, err := db.GetCurrentTime(ctx, server.dbsession)
+		env := ctx.Value(ctxKeyAppHandlerEnv).(*appHandlerEnv)
+		now, err := db.GetCurrentTime(ctx, env.dbsession)
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
@@ -157,38 +150,7 @@ func NewServer(
 		view.Hello(name, now).Render(r.Context(), w)
 	})
 
-	return server, nil
-}
-
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.handler.ServeHTTP(w, r)
-}
-
-func (s *Server) Serve() error {
-	s.server = &http.Server{
-		Addr:    s.listenAddress,
-		Handler: s.handler,
-	}
-
-	s.logger.Info().Str("listen_address", s.listenAddress).Msg("Starting HTTP server")
-
-	err := s.server.ListenAndServe()
-	if err != http.ErrServerClosed {
-		return err
-	}
-
-	return nil
-}
-
-func (s *Server) Shutdown(ctx context.Context) error {
-	s.logger.Info().Msg("Stopping HTTP server")
-	s.server.SetKeepAlivesEnabled(false)
-	err := s.server.Shutdown(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return router, nil
 }
 
 // setContextValue returns a middleware handler that sets a value in the request context.
@@ -219,32 +181,32 @@ func loginSessionHandler() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			server := ctx.Value(ctxKeyServer).(*Server)
+			env := ctx.Value(ctxKeyAppHandlerEnv).(*appHandlerEnv)
 			loginSession := &RequestLoginSession{}
 			ctx = context.WithValue(ctx, ctxKeySession, loginSession)
 
-			cookie, err := r.Cookie(server.sessionCookieTemplate.Name)
+			cookie, err := r.Cookie(env.sessionCookieTemplate.Name)
 			if err != nil {
 				// Only expected error is http.ErrNoCookie.
 				if !errors.Is(err, http.ErrNoCookie) {
-					server.logger.Warn().Err(err).Msg("unexpected error getting session cookie")
+					env.logger.Warn().Err(err).Msg("unexpected error getting session cookie")
 				}
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
 			var loginSessionID uuid.UUID
-			err = server.secureCookie.Decode(server.sessionCookieTemplate.Name, cookie.Value, &loginSessionID)
+			err = env.secureCookie.Decode(env.sessionCookieTemplate.Name, cookie.Value, &loginSessionID)
 			if err != nil {
 				var secureCookieError securecookie.Error
 				if errors.As(err, &secureCookieError) && secureCookieError.IsDecode() {
-					server.logger.Warn().Err(err).Msg("error decoding session cookie")
+					env.logger.Warn().Err(err).Msg("error decoding session cookie")
 				}
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
-			dbpool := db.DBPool(server.dbsession)
+			dbpool := db.DBPool(env.dbsession)
 
 			user := &RequestUser{}
 			err = dbpool.QueryRow(ctx,
@@ -276,11 +238,11 @@ where login_sessions.id=$1`,
 // setLoginSessionCookie sets the login session cookie in the response.
 func setLoginSessionCookie(w http.ResponseWriter, r *http.Request, loginSessionID uuid.UUID) error {
 	ctx := r.Context()
-	server := ctx.Value(ctxKeyServer).(*Server)
-	cookie := &(*server.sessionCookieTemplate)
+	env := ctx.Value(ctxKeyAppHandlerEnv).(*appHandlerEnv)
+	cookie := &(*env.sessionCookieTemplate)
 
 	var err error
-	cookie.Value, err = server.secureCookie.Encode(cookie.Name, loginSessionID)
+	cookie.Value, err = env.secureCookie.Encode(cookie.Name, loginSessionID)
 	if err != nil {
 		return err
 	}
@@ -293,8 +255,8 @@ func setLoginSessionCookie(w http.ResponseWriter, r *http.Request, loginSessionI
 // clearLoginSessionCookie clears the login session cookie in the response.
 func clearLoginSessionCookie(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	server := ctx.Value(ctxKeyServer).(*Server)
-	cookie := &(*server.sessionCookieTemplate)
+	env := ctx.Value(ctxKeyAppHandlerEnv).(*appHandlerEnv)
+	cookie := &(*env.sessionCookieTemplate)
 	cookie.Expires = time.Unix(0, 0)
 	http.SetCookie(w, cookie)
 }

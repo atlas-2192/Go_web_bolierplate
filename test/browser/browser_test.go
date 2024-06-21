@@ -74,8 +74,7 @@ func startServer(t *testing.T) *serverInstanceT {
 	cookieAuthenticationKey := make([]byte, 64)
 	cookieEncryptionKey := make([]byte, 32)
 
-	handler, err := server.NewServer(
-		"127.0.0.1:0",
+	handler, err := server.NewAppHandler(
 		dbsess,
 		&logger,
 		csrfKey,
