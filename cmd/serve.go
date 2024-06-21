@@ -13,7 +13,7 @@ import (
 
 	"github.com/jackc/envconf"
 	"github.com/jackc/web-starter-app/db"
-	"github.com/jackc/web-starter-app/server"
+	"github.com/jackc/web-starter-app/httpz"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
@@ -77,7 +77,7 @@ var serveCmd = &cobra.Command{
 		wg := &sync.WaitGroup{}
 
 		if startHTTPServer {
-			handler, err := server.NewAppHandler(
+			handler, err := httpz.NewHandler(
 				dbsession,
 				zerolog.Ctx(processCtx),
 				csrfKey,

@@ -11,7 +11,7 @@ import (
 	"github.com/go-rod/rod"
 	"github.com/jackc/testdb"
 	"github.com/jackc/web-starter-app/db"
-	"github.com/jackc/web-starter-app/server"
+	"github.com/jackc/web-starter-app/httpz"
 	"github.com/jackc/web-starter-app/test/testbrowser"
 	"github.com/jackc/web-starter-app/test/testutil"
 	"github.com/rs/zerolog"
@@ -74,7 +74,7 @@ func startServer(t *testing.T) *serverInstanceT {
 	cookieAuthenticationKey := make([]byte, 64)
 	cookieEncryptionKey := make([]byte, 32)
 
-	handler, err := server.NewAppHandler(
+	handler, err := httpz.NewHandler(
 		dbsess,
 		&logger,
 		csrfKey,
