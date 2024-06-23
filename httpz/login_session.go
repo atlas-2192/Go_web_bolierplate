@@ -106,3 +106,8 @@ func clearLoginSessionCookie(w http.ResponseWriter, r *http.Request) {
 	cookie.Expires = time.Unix(0, 0)
 	http.SetCookie(w, cookie)
 }
+
+// getLoginSession returns the login session from the request context.
+func getLoginSession(ctx context.Context) *RequestLoginSession {
+	return ctx.Value(ctxKeySession).(*RequestLoginSession)
+}

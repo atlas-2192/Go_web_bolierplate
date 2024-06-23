@@ -122,7 +122,7 @@ func NewHandler(
 		}
 
 		var name string
-		loginSession := ctx.Value(ctxKeySession).(*RequestLoginSession)
+		loginSession := getLoginSession(ctx)
 		if loginSession.User != nil {
 			name = loginSession.User.Username
 		} else {
