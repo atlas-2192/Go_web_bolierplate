@@ -1,6 +1,7 @@
 package httpz
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype/zeronull"
 	"github.com/jackc/pgxutil"
 	"github.com/jackc/web-starter-app/db"
+	"github.com/jackc/web-starter-app/lib/bee"
 	"github.com/jackc/web-starter-app/view"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
@@ -70,24 +72,24 @@ func NewHandler(
 
 	router.Use(loginSessionHandler())
 
-	router.Get("/login", func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		view.LoginPage(csrf.Token(r)).Render(ctx, w)
-	})
+	hb := bee.HandlerBuilder[*environment]{
+		CtxKeyEnv: ctxKeyEnvironment,
+	}
 
-	router.Post("/login/submit", func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		env := ctx.Value(ctxKeyEnvironment).(*environment)
+	router.Method("GET", "/login", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		return view.LoginPage(csrf.Token(r)).Render(ctx, w)
+	}))
+
+	router.Method("POST", "/login/submit", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
 		user, err := db.GetUserByUsername(ctx, env.dbsession, r.FormValue("username"))
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				// TODO - rerender form
 				http.Error(w, "user name not found", http.StatusNotFound)
-				return
+				return nil
 			}
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
+			return err
 		}
 
 		dbpool := db.DBPool(env.dbsession)
@@ -104,22 +106,19 @@ func NewHandler(
 			pgx.RowTo[uuid.UUID],
 		)
 		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
+			return err
 		}
 
 		setLoginSessionCookie(w, r, loginSessionID)
 
 		http.Redirect(w, r, "/", http.StatusSeeOther)
-	})
+		return nil
+	}))
 
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		env := ctx.Value(ctxKeyEnvironment).(*environment)
+	router.Method("GET", "/", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
 		now, err := db.GetCurrentTime(ctx, env.dbsession)
 		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
+			return err
 		}
 
 		var name string
@@ -130,8 +129,8 @@ func NewHandler(
 			name = "world"
 		}
 
-		view.Hello(name, now).Render(r.Context(), w)
-	})
+		return view.Hello(name, now).Render(r.Context(), w)
+	}))
 
 	return router, nil
 }
