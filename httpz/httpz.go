@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/securecookie"
-	"github.com/jackc/web-starter-app/db"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 )
 
@@ -22,8 +22,8 @@ const (
 )
 
 type environment struct {
-	dbsession *db.Session
-	logger    *zerolog.Logger
+	dbpool *pgxpool.Pool
+	logger *zerolog.Logger
 
 	secureCookie          *securecookie.SecureCookie
 	sessionCookieTemplate *http.Cookie

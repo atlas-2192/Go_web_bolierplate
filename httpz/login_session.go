@@ -9,7 +9,6 @@ import (
 	"github.com/gofrs/uuid/v5"
 	"github.com/gorilla/securecookie"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/web-starter-app/db"
 )
 
 type RequestUser struct {
@@ -52,10 +51,8 @@ func loginSessionHandler() func(http.Handler) http.Handler {
 				return
 			}
 
-			dbpool := db.DBPool(env.dbsession)
-
 			user := &RequestUser{}
-			err = dbpool.QueryRow(ctx,
+			err = env.dbpool.QueryRow(ctx,
 				`select login_sessions.id, users.id, users.username
 from login_sessions
 	join users on login_sessions.user_id=users.id

@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype/zeronull"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgxutil"
 	"github.com/jackc/web-starter-app/db"
 	"github.com/jackc/web-starter-app/lib/bee"
@@ -23,7 +24,7 @@ import (
 
 // NewHandler returns an http.Handler that serves the web application.
 func NewHandler(
-	dbsession *db.Session,
+	dbpool *pgxpool.Pool,
 	logger *zerolog.Logger,
 	csrfKey []byte,
 	secureCookies bool,
@@ -34,7 +35,7 @@ func NewHandler(
 	router := chi.NewRouter()
 
 	env := &environment{
-		dbsession:    dbsession,
+		dbpool:       dbpool,
 		logger:       logger,
 		secureCookie: securecookie.New(cookieAuthenticationKey, cookieEncryptionKey),
 		sessionCookieTemplate: &http.Cookie{
@@ -82,7 +83,7 @@ func NewHandler(
 	}))
 
 	router.Method("POST", "/login/submit", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
-		user, err := db.GetUserByUsername(ctx, env.dbsession, r.FormValue("username"))
+		user, err := db.GetUserByUsername(ctx, env.dbpool, r.FormValue("username"))
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				// TODO - rerender form
@@ -92,9 +93,8 @@ func NewHandler(
 			return err
 		}
 
-		dbpool := db.DBPool(env.dbsession)
 		now := time.Now()
-		loginSessionID, err := pgxutil.InsertRowReturning(ctx, dbpool, "login_sessions", map[string]any{
+		loginSessionID, err := pgxutil.InsertRowReturning(ctx, env.dbpool, "login_sessions", map[string]any{
 			"id":                            uuid.Must(uuid.NewV7()),
 			"user_id":                       user.ID,
 			"user_agent":                    zeronull.Text(r.UserAgent()),
@@ -116,7 +116,7 @@ func NewHandler(
 	}))
 
 	router.Method("GET", "/", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
-		now, err := db.GetCurrentTime(ctx, env.dbsession)
+		now, err := db.GetCurrentTime(ctx, env.dbpool)
 		if err != nil {
 			return err
 		}

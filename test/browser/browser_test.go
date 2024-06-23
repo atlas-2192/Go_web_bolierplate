@@ -10,7 +10,6 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/jackc/testdb"
-	"github.com/jackc/web-starter-app/db"
 	"github.com/jackc/web-starter-app/httpz"
 	"github.com/jackc/web-starter-app/test/testbrowser"
 	"github.com/jackc/web-starter-app/test/testutil"
@@ -69,13 +68,12 @@ func startServer(t *testing.T) *serverInstanceT {
 	logger := zerolog.New(logWriter).With().Timestamp().Logger()
 
 	dbpool := tdb.PoolConnect(t, ctx)
-	dbsess := db.NewSession(dbpool)
 	csrfKey := make([]byte, 64)
 	cookieAuthenticationKey := make([]byte, 64)
 	cookieEncryptionKey := make([]byte, 32)
 
 	handler, err := httpz.NewHandler(
-		dbsess,
+		dbpool,
 		&logger,
 		csrfKey,
 		false,

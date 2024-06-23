@@ -12,7 +12,6 @@ import (
 	"sync"
 
 	"github.com/jackc/envconf"
-	"github.com/jackc/web-starter-app/db"
 	"github.com/jackc/web-starter-app/httpz"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -60,7 +59,6 @@ var serveCmd = &cobra.Command{
 
 		logger := setupLogger(logFormat)
 		dbpool := setupPGXConnPool(processCtx, databaseURL, logger)
-		dbsession := db.NewSession(dbpool)
 
 		// Listen for shutdown signals. When a signal is received, cancel the processCtx.
 		interruptChan := make(chan os.Signal, 1)
@@ -78,7 +76,7 @@ var serveCmd = &cobra.Command{
 
 		if startHTTPServer {
 			handler, err := httpz.NewHandler(
-				dbsession,
+				dbpool,
 				zerolog.Ctx(processCtx),
 				csrfKey,
 				cookieSecure,
