@@ -48,7 +48,6 @@ func NewHandler(
 	}
 
 	router.Use(middleware.Compress(5))
-	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
 
 	router.Use(hlog.NewHandler(*logger))
