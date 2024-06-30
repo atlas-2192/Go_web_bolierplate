@@ -2,7 +2,12 @@ package view
 
 import "time"
 
-templ Hello(name string, now time.Time) {
+templ Hello(csrfToken string, name string, now time.Time) {
   <div>Hello, { name }!</div>
   <div>It is { now.Format("15:04:05") } in the database.</div>
+
+  <form action="/logout" method="post">
+    <input type="hidden" name="gorilla.csrf.Token" value={csrfToken} />
+    <button type="submit">Logout</button>
+  </form>
 }

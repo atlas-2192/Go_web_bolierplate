@@ -114,6 +114,18 @@ func NewHandler(
 		return nil
 	}))
 
+	router.Method("POST", "/logout", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+		loginSession := getLoginSession(ctx)
+		if loginSession != nil {
+			_, err := env.dbpool.Exec(ctx, "delete from login_sessions where id=$1", loginSession.ID)
+			if err != nil {
+				return err
+			}
+		}
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return nil
+	}))
+
 	router.Method("GET", "/", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
 		now, err := db.GetCurrentTime(ctx, env.dbpool)
 		if err != nil {
@@ -128,7 +140,7 @@ func NewHandler(
 			name = "world"
 		}
 
-		return view.Hello(name, now).Render(r.Context(), w)
+		return view.Hello(csrf.Token(r), name, now).Render(r.Context(), w)
 	}))
 
 	return router, nil
