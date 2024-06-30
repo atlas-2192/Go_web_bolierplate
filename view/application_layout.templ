@@ -1,0 +1,19 @@
+package view
+
+templ ApplicationLayout(body templ.Component) {
+  <html>
+    <head>
+      <title>My App</title>
+    </head>
+    <body>
+      <header>
+        <nav>
+          <a href="/">Home</a>
+        </nav>
+      </header>
+      <main>
+        @body
+      </main>
+    </body>
+  </html>
+}

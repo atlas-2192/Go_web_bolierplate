@@ -140,7 +140,7 @@ func NewHandler(
 			name = "world"
 		}
 
-		return view.Hello(csrf.Token(r), name, now).Render(r.Context(), w)
+		return view.ApplicationLayout(view.Hello(csrf.Token(r), name, now)).Render(r.Context(), w)
 	}))
 
 	return router, nil
