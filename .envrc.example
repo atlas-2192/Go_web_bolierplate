@@ -1,4 +1,4 @@
-export LISTEN_ADDRESS=127.0.0.1:8080
+export LISTEN_ADDRESS=127.0.0.1:8081
 export LOG_FORMAT=console
 
 # Set common PostgreSQL config using PG* variables such as PGHOST and PGDATABASE. This user should be privileged enough

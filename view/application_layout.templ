@@ -1,9 +1,15 @@
 package view
 
 templ ApplicationLayout(body templ.Component) {
+  <!DOCTYPE html>
   <html>
     <head>
-      <title>My App</title>
+      <title>web-starter-app</title>
+
+      <!-- TODO - proper paths in development and production -->
+      <script type="module" src="/assets/@vite/client"></script>
+      <script type="module" src="/assets/main.js"></script>
+
     </head>
     <body>
       <header>

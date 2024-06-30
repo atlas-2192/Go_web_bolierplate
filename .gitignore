@@ -3,6 +3,7 @@
 /bin/web-starter-app
 /bin/start-web-starter-app-dev.py
 /bin/setup_test_databases
+/frontend/node_modules
 /postgresql/tern.conf
 /tmp/*
 /view/.last_templ_generate
