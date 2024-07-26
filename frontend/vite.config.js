@@ -23,6 +23,6 @@ export default defineConfig({
   },
   plugins: [
     // Delay 100ms to allow the server to restart before triggering the page reload. Adjust as needed.
-    FullReload("../bin/web-starter-app", {delay: 100})
+    FullReload("../bin/web-starter-app", {delay: 250})
   ]
 })
