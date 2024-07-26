@@ -1,0 +1,12 @@
+package view
+
+templ WalksNew(csrfToken string) {
+  <form method="post" action="/walks">
+    <input type="hidden" name="gorilla.csrf.Token" value={csrfToken} />
+    <label for="walk_duration">Duration</label>
+    <input id="walk_duration" type="text" name="walk[duration]" placeholder="30m 15s" />
+    <label for="walk_distance_in_miles">Distance in miles</label>
+    <input id="walk_distance_in_miles" type="text" name="walk[distance_in_miles]" placeholder="1.23" />
+    <button type="submit">Save</button>
+  </form>
+}

@@ -143,5 +143,27 @@ func NewHandler(
 		return view.ApplicationLayout(view.Hello(csrf.Token(r), name, now)).Render(r.Context(), w)
 	}))
 
+	router.Method("GET", "/walks/new", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+		loginSession := getLoginSession(ctx)
+		if loginSession.User == nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+		}
+
+		return view.ApplicationLayout(view.WalksNew(csrf.Token(r))).Render(r.Context(), w)
+	}))
+
+	router.Method("POST", "/walks", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+		loginSession := getLoginSession(ctx)
+		if loginSession.User == nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+		}
+
+		// TODO - actually save the walk
+
+		// TODO - form helpers to render values back to the form
+
+		return view.ApplicationLayout(view.WalksNew(csrf.Token(r))).Render(r.Context(), w)
+	}))
+
 	return router, nil
 }

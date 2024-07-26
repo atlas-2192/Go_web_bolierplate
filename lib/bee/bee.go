@@ -16,6 +16,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"regexp"
 	"strings"
@@ -165,6 +166,13 @@ func (hb *HandlerBuilder[T]) New(fn func(ctx context.Context, w http.ResponseWri
 // ParseParams parses the request parameters from the Chi route parameters, the URL query string, and the request
 // body. The request body can be parsed for application/json, application/x-www-form-urlencoded, and
 // multipart/form-data.
+//
+// When the request is URL encoded, the parameters are parsed as follows:
+//   - foo=bar -> map[string]any{"foo": "bar"}
+//   - foo[]=bar -> map[string]any{"foo": []string{"bar"}}
+//   - foo[]=bar&foo[]baz -> map[string]any{"foo": []string{"bar", "baz"}}
+//   - foo[bar]=baz -> {"foo": {"bar": "baz"}}
+//   - foo[bar][]=baz&foo[bar][]=qux -> {"foo": {"bar": []string{"baz", "qux"}}}
 func ParseParams(r *http.Request) (map[string]any, error) {
 	params := make(map[string]any)
 
@@ -175,16 +183,17 @@ func ParseParams(r *http.Request) (map[string]any, error) {
 		}
 	}
 
-	addValuesToParams := func(m map[string][]string) {
+	addValuesToParams := func(m map[string][]string) error {
 		for key, values := range m {
-			if len(values) > 0 {
-				if strings.HasSuffix(key, "[]") {
-					params[key[:len(key)-2]] = values
-				} else {
-					params[key] = values[0]
-				}
+			keyParts, err := splitParamName(key)
+			if err != nil {
+				return err
 			}
+
+			setNested(params, keyParts, values)
 		}
+
+		return nil
 	}
 
 	addValuesToParams(r.URL.Query())
@@ -213,4 +222,72 @@ func ParseParams(r *http.Request) (map[string]any, error) {
 	}
 
 	return params, nil
+}
+
+const paramNameArrayPart = "[]"
+
+var splitParamNameInitialRegexp = regexp.MustCompile(`\A\w+`)
+var splitParamNameNestedRegexp = regexp.MustCompile(`\A\[\w*\]`)
+
+func splitParamName(paramName string) ([]string, error) {
+	if paramName == "" {
+		return nil, errors.New("paramName must not be empty")
+	}
+
+	loc := splitParamNameInitialRegexp.FindStringIndex(paramName)
+	if loc == nil {
+		return nil, errors.New("paramName must start a alphanumeric character or an underscore")
+	}
+
+	if loc[1] == len(paramName) {
+		return []string{paramName}, nil
+	}
+
+	parts := make([]string, 0, 4)
+	parts = append(parts, paramName[:loc[1]])
+	paramName = paramName[loc[1]:]
+
+	for {
+		loc = splitParamNameNestedRegexp.FindStringIndex(paramName)
+		if loc == nil {
+			return nil, errors.New("paramName has an invalid format")
+		}
+
+		if loc[1] == 2 { // [] -> []
+			if len(paramName) > loc[1] {
+				return nil, errors.New("paramName array part must be last element")
+			}
+			parts = append(parts, paramName[:loc[1]])
+		} else { // [foo] -> foo
+			parts = append(parts, paramName[loc[0]+1:loc[1]-1])
+		}
+
+		if loc[1] == len(paramName) {
+			return parts, nil
+		}
+
+		paramName = paramName[loc[1]:]
+	}
+
+}
+
+func setNested(params map[string]any, keyParts []string, values []string) {
+	if len(keyParts) == 1 {
+		params[keyParts[0]] = values[len(values)-1]
+		return
+	}
+
+	// Since len(keyParts) > 1, keyParts[1] is always valid. Check if it is an array part.
+	if keyParts[1] == paramNameArrayPart {
+		params[keyParts[0]] = values
+		return
+	}
+
+	if nestedMap, ok := params[keyParts[0]].(map[string]any); ok {
+		setNested(nestedMap, keyParts[1:], values)
+	} else {
+		nestedMap := make(map[string]any)
+		params[keyParts[0]] = nestedMap
+		setNested(nestedMap, keyParts[1:], values)
+	}
 }

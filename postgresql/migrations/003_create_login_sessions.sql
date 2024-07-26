@@ -1,4 +1,4 @@
-create table login_sessions(
+create table login_sessions (
   id uuid primary key,
 	user_id uuid not null references users,
 	user_agent text,

@@ -17,20 +17,56 @@ import (
 
 func TestParseParamsQueryParameters(t *testing.T) {
 	queryArgs := url.Values{}
-	queryArgs.Add("foo", "1")
-	queryArgs.Add("bar", "2")
+	queryArgs.Add("a", "1")
+	queryArgs.Add("b", "2")
+	queryArgs.Add("c[]", "3")
+	queryArgs.Add("c[]", "4")
+	queryArgs.Add("d[e]", "5")
+	queryArgs.Add("d[f]", "6")
+	queryArgs.Add("g[h][i]", "7")
+	queryArgs.Add("g[h][j]", "8")
+	queryArgs.Add("k[l][m][]", "9")
+	queryArgs.Add("k[l][m][]", "10")
+	queryArgs.Add("k[l][n][]", "11")
+	queryArgs.Add("k[l][n][]", "12")
+
 	r := httptest.NewRequest("GET", fmt.Sprintf("/somewhere?%s", queryArgs.Encode()), nil)
 
 	params, err := bee.ParseParams(r)
 	require.NoError(t, err)
 
-	require.Equal(t, map[string]any{"foo": "1", "bar": "2"}, params)
+	require.Equal(t,
+		map[string]any{
+			"a": "1",
+			"b": "2",
+			"c": []string{"3", "4"},
+			"d": map[string]any{"e": "5", "f": "6"},
+			"g": map[string]any{"h": map[string]any{"i": "7", "j": "8"}},
+			"k": map[string]any{
+				"l": map[string]any{
+					"m": []string{"9", "10"},
+					"n": []string{"11", "12"},
+				},
+			},
+		},
+		params,
+	)
 }
 
 func TestParseParamsFormURLEncoded(t *testing.T) {
 	queryArgs := url.Values{}
-	queryArgs.Add("foo", "1")
-	queryArgs.Add("bar", "2")
+	queryArgs.Add("a", "1")
+	queryArgs.Add("b", "2")
+	queryArgs.Add("c[]", "3")
+	queryArgs.Add("c[]", "4")
+	queryArgs.Add("d[e]", "5")
+	queryArgs.Add("d[f]", "6")
+	queryArgs.Add("g[h][i]", "7")
+	queryArgs.Add("g[h][j]", "8")
+	queryArgs.Add("k[l][m][]", "9")
+	queryArgs.Add("k[l][m][]", "10")
+	queryArgs.Add("k[l][n][]", "11")
+	queryArgs.Add("k[l][n][]", "12")
 
 	r := httptest.NewRequest("POST", "/somewhere", strings.NewReader(queryArgs.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -38,11 +74,26 @@ func TestParseParamsFormURLEncoded(t *testing.T) {
 	params, err := bee.ParseParams(r)
 	require.NoError(t, err)
 
-	require.Equal(t, map[string]any{"foo": "1", "bar": "2"}, params)
+	require.Equal(t,
+		map[string]any{
+			"a": "1",
+			"b": "2",
+			"c": []string{"3", "4"},
+			"d": map[string]any{"e": "5", "f": "6"},
+			"g": map[string]any{"h": map[string]any{"i": "7", "j": "8"}},
+			"k": map[string]any{
+				"l": map[string]any{
+					"m": []string{"9", "10"},
+					"n": []string{"11", "12"},
+				},
+			},
+		},
+		params,
+	)
 }
 
 func TestParseParamsApplicationJSON(t *testing.T) {
-	postData := map[string]any{"foo": "1", "bar": "2"}
+	postData := map[string]any{"a": "1", "b": "2"}
 	postBody, err := json.Marshal(postData)
 	require.NoError(t, err)
 
