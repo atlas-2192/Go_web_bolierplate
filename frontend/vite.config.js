@@ -1,6 +1,19 @@
 import { defineConfig } from "vite"
 import FullReload from "vite-plugin-full-reload"
 
+const proxyErrorHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Proxy error</title>
+  <script>
+    setTimeout(() => { location.reload() }, 100)
+  </script>
+</head>
+<body>
+  Backend server not accepting connections. Retrying...
+</body>
+</html>`
+
 export default defineConfig({
   root: "src",
   base: "/assets",
@@ -9,7 +22,18 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "^/(?!(assets))" : {
-        target: "http://localhost:8081"
+        target: "http://localhost:8081",
+        configure: (proxy) => {
+          proxy.on("error", (err, req, res) => {
+            if (err.code === "ECONNREFUSED") {
+              res.writeHead(502, {
+                "Content-Type": "text/html"
+              })
+
+              res.end(proxyErrorHtml)
+            }
+          })
+        }
       }
     },
   },
@@ -22,7 +46,6 @@ export default defineConfig({
     },
   },
   plugins: [
-    // Delay 100ms to allow the server to restart before triggering the page reload. Adjust as needed.
-    FullReload("../bin/web-starter-app", {delay: 250})
+    FullReload("../bin/web-starter-app")
   ]
 })
