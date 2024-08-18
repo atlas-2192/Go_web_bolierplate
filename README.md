@@ -1,8 +1,9 @@
 # Web Starter App
 
-Warning: This is not ready for public use.
+Warning: This is not ready for public use. It's not even close.
 
-This is a starter web application. It is not a web framework. It is how I prefer to start web applications.
+This is an experiment of how to build web applications and to make an example starter web application. It is not a web
+framework. It is how I prefer to start web applications.
 
 ## Prerequisites
 

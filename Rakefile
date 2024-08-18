@@ -7,7 +7,7 @@ file "bin/web-starter-app" => FileList["Rakefile", "*.go", "go.*", "**/*.go", "v
   args = ["go", "build", "-o", t.name]
 
   # Uncomment the following line to enable debugging.
-  # args << "-gcflags" << "all=-N -l"
+  args << "-gcflags" << "all=-N -l"
 
   sh *args
 end

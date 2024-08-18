@@ -15,8 +15,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype/zeronull"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgxutil"
+	"github.com/jackc/structify"
 	"github.com/jackc/web-starter-app/db"
 	"github.com/jackc/web-starter-app/lib/bee"
+	"github.com/jackc/web-starter-app/lib/formdata"
 	"github.com/jackc/web-starter-app/view"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
@@ -74,6 +76,13 @@ func NewHandler(
 
 	hb := bee.HandlerBuilder[*environment]{
 		CtxKeyEnv: ctxKeyEnvironment,
+		ErrorHandlers: []bee.ErrorHandler{
+			func(w http.ResponseWriter, r *http.Request, err error) (bool, error) {
+				zerolog.Ctx(r.Context()).Error().Err(err).Msg("error handling request")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return true, nil
+			},
+		},
 	}
 
 	router.Method("GET", "/login", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
@@ -143,27 +152,89 @@ func NewHandler(
 		return view.ApplicationLayout(view.Hello(csrf.Token(r), name, now)).Render(r.Context(), w)
 	}))
 
+	newWalkForm := &formdata.Form{
+		Fields: []*formdata.Field{
+			{
+				Label:    "Duration",
+				Name:     "duration",
+				Type:     "duration",
+				Required: true,
+			},
+			{
+				Label:    "Distance in miles",
+				Name:     "distance_in_miles",
+				Type:     "number",
+				Required: true,
+			},
+		},
+	}
+
 	router.Method("GET", "/walks/new", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
 		loginSession := getLoginSession(ctx)
 		if loginSession.User == nil {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 		}
 
-		return view.ApplicationLayout(view.WalksNew(csrf.Token(r))).Render(r.Context(), w)
+		walkForm := &view.WalkForm{}
+		walkFormData := newWalkForm.New()
+
+		return view.ApplicationLayout(view.WalksNew(walkForm, walkFormData)).Render(r.Context(), w)
 	}))
 
-	router.Method("POST", "/walks", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
-		loginSession := getLoginSession(ctx)
-		if loginSession.User == nil {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+	router.Method("POST", "/walks", func() http.Handler {
+		type parsedParams struct {
+			Walk struct {
+				Duration        time.Duration
+				DistanceInMiles float64
+				FinishTime      structify.Optional[time.Time]
+			}
 		}
 
-		// TODO - actually save the walk
+		return hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+			loginSession := getLoginSession(ctx)
+			if loginSession.User == nil {
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+			}
 
-		// TODO - form helpers to render values back to the form
+			formData := newWalkForm.Parse(params)
 
-		return view.ApplicationLayout(view.WalksNew(csrf.Token(r))).Render(r.Context(), w)
-	}))
+			_, err := env.dbpool.Exec(
+				ctx,
+				"insert into walks (id, user_id, duration, distance_in_miles) values ($1, $2, $3, $4)",
+				uuid.Must(uuid.NewV7()),
+				loginSession.User.ID,
+				formData.FieldValues["duration"].Value,
+				formData.FieldValues["distance_in_miles"].Value,
+			)
+			if err != nil {
+				return err
+			}
+
+			// var parsedParams parsedParams
+			// err := structify.Parse(params, &parsedParams)
+			// if err != nil {
+			// 	return err
+			// }
+
+			// formStruct := NewWalkFormStruct(params)
+			// formStruct := NewFormStruct[view.WalkForm](params)
+
+			// TODO - actually save the walk
+
+			// TODO - form helpers to render values back to the form
+			// walkForm := &view.WalkForm{
+			// 	Duration:        fmt.Sprint(parsedParams.Walk.Duration),
+			// 	DistanceInMiles: fmt.Sprint(parsedParams.Walk.DistanceInMiles),
+			// }
+
+			// formData := newWalkForm.Load(map[string]any{"duration": parsedParams.Walk.Duration, "distance_in_miles": parsedParams.Walk.DistanceInMiles})
+
+			// return view.ApplicationLayout(view.WalksNew(walkForm, formData)).Render(r.Context(), w)
+
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return nil
+		})
+	}())
 
 	return router, nil
 }

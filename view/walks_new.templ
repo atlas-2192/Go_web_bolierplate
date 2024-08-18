@@ -1,12 +1,36 @@
 package view
 
-templ WalksNew(csrfToken string) {
+import (
+	"github.com/jackc/web-starter-app/lib/formdata"
+)
+
+type WalkForm struct {
+  Duration string
+  DistanceInMiles string
+}
+
+templ labeledInputField(label, fieldName string, value string, attrs, attrs2 templ.Attributes) {
+  <div>
+    <label for={"walk_"+fieldName}>{label}</label>
+    <input id={"walk_" + fieldName} type="text" name={"walk[" + fieldName + "]"} value={value} {attrs...} {attrs2...} />
+  </div>
+}
+
+templ button(text string, attrs templ.Attributes) {
+  <button {attrs...}>{text}</button>
+}
+
+templ WalksNew(walkForm *WalkForm, dform *formdata.FormData) {
   <form method="post" action="/walks">
-    <input type="hidden" name="gorilla.csrf.Token" value={csrfToken} />
-    <label for="walk_duration">Duration</label>
-    <input id="walk_duration" type="text" name="walk[duration]" placeholder="30m 15s" />
-    <label for="walk_distance_in_miles">Distance in miles</label>
-    <input id="walk_distance_in_miles" type="text" name="walk[distance_in_miles]" placeholder="1.23" />
-    <button type="submit">Save</button>
+    <input type="hidden" name="gorilla.csrf.Token" value={csrfToken(ctx)} />
+    @labeledInputField("Duration", "duration", walkForm.Duration, templ.Attributes{"placeholder": "30m 15s"}, templ.Attributes{"class": "border"})
+    @labeledInputField("Distance in miles", "distance_in_miles", walkForm.DistanceInMiles, templ.Attributes{"placeholder": "1.23"}, nil)
+    @button("Save", templ.Attributes{"type": "submit"})
+  </form>
+
+  <form method="post" action="/walks">
+    <input type="hidden" name="gorilla.csrf.Token" value={csrfToken(ctx)} />
+    @VerticalLabeledForm(dform)
+    @button("Save", templ.Attributes{"type": "submit"})
   </form>
 }

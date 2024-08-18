@@ -2,6 +2,8 @@ module github.com/jackc/web-starter-app
 
 go 1.22.3
 
+replace github.com/jackc/structify => ../structify
+
 require (
 	github.com/a-h/templ v0.2.747
 	github.com/go-chi/chi/v5 v5.1.0
@@ -25,10 +27,12 @@ require (
 	github.com/gorilla/handlers v1.5.2 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jackc/errortree v0.0.0-20230218213547-c5e1d8612a3f // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx-gofrs-uuid v0.0.0-20230224015001-1d428863c2e2 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
+	github.com/jackc/structify v0.0.0-20230218213732-dd25d3a8012b // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

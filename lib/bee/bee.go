@@ -16,7 +16,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"regexp"
 	"strings"
@@ -116,9 +115,10 @@ func (hb *HandlerBuilder[T]) New(fn func(ctx context.Context, w http.ResponseWri
 					return
 				}
 				if handled {
-					break
+					return
 				}
 			}
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
 
 		// Even though the net/http package will set the Content-Type header if it is not set, we do it here so that
@@ -185,11 +185,7 @@ func ParseParams(r *http.Request) (map[string]any, error) {
 
 	addValuesToParams := func(m map[string][]string) error {
 		for key, values := range m {
-			keyParts, err := splitParamName(key)
-			if err != nil {
-				return err
-			}
-
+			keyParts := splitParamName(key)
 			setNested(params, keyParts, values)
 		}
 
@@ -229,33 +225,30 @@ const paramNameArrayPart = "[]"
 var splitParamNameInitialRegexp = regexp.MustCompile(`\A\w+`)
 var splitParamNameNestedRegexp = regexp.MustCompile(`\A\[\w*\]`)
 
-func splitParamName(paramName string) ([]string, error) {
-	if paramName == "" {
-		return nil, errors.New("paramName must not be empty")
-	}
-
+func splitParamName(paramName string) []string {
 	loc := splitParamNameInitialRegexp.FindStringIndex(paramName)
 	if loc == nil {
-		return nil, errors.New("paramName must start a alphanumeric character or an underscore")
+		return []string{paramName}
 	}
 
 	if loc[1] == len(paramName) {
-		return []string{paramName}, nil
+		return []string{paramName}
 	}
 
 	parts := make([]string, 0, 4)
 	parts = append(parts, paramName[:loc[1]])
+	originalParamName := paramName
 	paramName = paramName[loc[1]:]
 
 	for {
 		loc = splitParamNameNestedRegexp.FindStringIndex(paramName)
 		if loc == nil {
-			return nil, errors.New("paramName has an invalid format")
+			return []string{originalParamName}
 		}
 
 		if loc[1] == 2 { // [] -> []
 			if len(paramName) > loc[1] {
-				return nil, errors.New("paramName array part must be last element")
+				return []string{originalParamName}
 			}
 			parts = append(parts, paramName[:loc[1]])
 		} else { // [foo] -> foo
@@ -263,7 +256,7 @@ func splitParamName(paramName string) ([]string, error) {
 		}
 
 		if loc[1] == len(paramName) {
-			return parts, nil
+			return parts
 		}
 
 		paramName = paramName[loc[1]:]

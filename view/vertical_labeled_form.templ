@@ -1,0 +1,39 @@
+package view
+
+import (
+  "fmt"
+  "github.com/jackc/web-starter-app/lib/formdata"
+)
+
+func formattedValue(fieldData *formdata.FieldData) string {
+  if fieldData.SubmittedValue != "" {
+    return fieldData.SubmittedValue
+  }
+
+  if fieldData.Value == nil {
+    return ""
+  }
+
+  return fmt.Sprint(fieldData.Value)
+}
+
+templ VerticalLabeledForm(formData *formdata.FormData) {
+  for _, field := range formData.Form.Fields {
+    <div class="mt-4">
+      <label
+        for={field.Name}
+        class="block"
+      >
+        {field.Label}
+      </label>
+      <input
+        id={field.Name}
+        class="border"
+        type="text"
+        name={field.Name}
+        value={formattedValue(formData.FieldValues[field.Name])}
+        required?={field.Required}
+      />
+    </div>
+  }
+}

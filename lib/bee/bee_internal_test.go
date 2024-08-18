@@ -16,54 +16,42 @@ func TestSplitParamName(t *testing.T) {
 		{
 			testName:  "empty",
 			paramName: "",
-			parts:     nil,
-			errStr:    "paramName must not be empty",
+			parts:     []string{""},
 		},
 		{
 			testName:  "top level key",
 			paramName: "foo",
 			parts:     []string{"foo"},
-			errStr:    "",
 		},
 		{
 			testName:  "top level array key",
 			paramName: "foo[]",
 			parts:     []string{"foo", paramNameArrayPart},
-			errStr:    "",
 		},
 		{
 			testName:  "nested attribute",
 			paramName: "foo[bar]",
 			parts:     []string{"foo", "bar"},
-			errStr:    "",
 		},
 		{
 			testName:  "double nested attribute",
 			paramName: "foo[bar][baz]",
 			parts:     []string{"foo", "bar", "baz"},
-			errStr:    "",
 		},
 		{
 			testName:  "double nested attribute array",
 			paramName: "foo[bar][baz][]",
 			parts:     []string{"foo", "bar", "baz", paramNameArrayPart},
-			errStr:    "",
 		},
 		{
-			testName:  "nested array of object",
+			testName:  "nested array of object is invalid",
 			paramName: "foo[bar][][baz]",
-			parts:     nil,
-			errStr:    "paramName array part must be last element",
+			parts:     []string{"foo[bar][][baz]"},
 		},
 	} {
 		t.Run(tc.testName, func(t *testing.T) {
-			parts, err := splitParamName(tc.paramName)
-			if tc.errStr == "" {
-				require.NoError(t, err)
-				require.Equal(t, tc.parts, parts)
-			} else {
-				require.EqualError(t, err, tc.errStr)
-			}
+			parts := splitParamName(tc.paramName)
+			require.Equal(t, tc.parts, parts)
 		})
 	}
 }
