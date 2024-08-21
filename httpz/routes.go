@@ -174,10 +174,9 @@ func NewHandler(
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 		}
 
-		walkForm := &view.WalkForm{}
-		walkFormData := newWalkForm.New()
+		formData := newWalkForm.New()
 
-		return view.ApplicationLayout(view.WalksNew(walkForm, walkFormData)).Render(r.Context(), w)
+		return view.ApplicationLayout(view.WalksNew(formData)).Render(r.Context(), w)
 	}))
 
 	router.Method("POST", "/walks", func() http.Handler {
