@@ -148,7 +148,15 @@ func NewHandler(
 			name = "world"
 		}
 
-		return view.ApplicationLayout(view.Hello(csrf.Token(r), name, now)).Render(r.Context(), w)
+		var walkRecords []*view.HomeWalkRecord
+		if loginSession.User != nil {
+			walkRecords, err = pgxutil.Select(ctx, env.dbpool, "select duration, distance_in_miles, finish_time from walks where user_id=$1 order by finish_time desc", []any{loginSession.User.ID}, pgx.RowToAddrOfStructByPos[view.HomeWalkRecord])
+			if err != nil {
+				return err
+			}
+		}
+
+		return view.ApplicationLayout(view.Hello(csrf.Token(r), name, now, walkRecords)).Render(r.Context(), w)
 	}))
 
 	newWalkForm := &formdata.Form{

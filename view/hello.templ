@@ -1,15 +1,40 @@
 package view
 
-import "time"
+import (
+	"github.com/shopspring/decimal"
+	"time"
+)
 
-templ Hello(csrfToken string, name string, now time.Time) {
-  <div>Hello, { name }!</div>
-  <div>It is { now.Format("15:04:05") } in the database.</div>
+type HomeWalkRecord struct {
+	Duration        time.Duration
+	DistanceInMiles decimal.Decimal
+	FinishTime      time.Time
+}
 
-  <a href="/walks/new">New walk</a>
-
-  <form action="/logout" method="post">
-    <input type="hidden" name="gorilla.csrf.Token" value={csrfToken} />
-    <button type="submit">Logout</button>
-  </form>
+templ Hello(csrfToken string, name string, now time.Time, walkRecords []*HomeWalkRecord) {
+	<div>Hello, { name }!</div>
+	<div>It is { now.Format("15:04:05") } in the database.</div>
+	<a href="/walks/new">New walk</a>
+	<table>
+		<thead>
+			<tr>
+				<th>Duration</th>
+				<th>Distance</th>
+				<th>Finish Time</th>
+			</tr>
+		</thead>
+		<tbody>
+			for _, record := range walkRecords {
+				<tr>
+					<td>{ record.Duration.String() }</td>
+					<td>{ record.DistanceInMiles.String() }</td>
+					<td>{ record.FinishTime.Format("2006-01-02 15:04:05") }</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+	<form action="/logout" method="post">
+		<input type="hidden" name="gorilla.csrf.Token" value={ csrfToken }/>
+		<button type="submit">Logout</button>
+	</form>
 }
