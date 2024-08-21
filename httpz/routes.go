@@ -15,7 +15,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype/zeronull"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgxutil"
-	"github.com/jackc/structify"
 	"github.com/jackc/web-starter-app/db"
 	"github.com/jackc/web-starter-app/lib/bee"
 	"github.com/jackc/web-starter-app/lib/formdata"
@@ -182,14 +181,6 @@ func NewHandler(
 	}))
 
 	router.Method("POST", "/walks", func() http.Handler {
-		type parsedParams struct {
-			Walk struct {
-				Duration        time.Duration
-				DistanceInMiles float64
-				FinishTime      structify.Optional[time.Time]
-			}
-		}
-
 		return hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
 			loginSession := getLoginSession(ctx)
 			if loginSession.User == nil {
@@ -209,27 +200,6 @@ func NewHandler(
 			if err != nil {
 				return err
 			}
-
-			// var parsedParams parsedParams
-			// err := structify.Parse(params, &parsedParams)
-			// if err != nil {
-			// 	return err
-			// }
-
-			// formStruct := NewWalkFormStruct(params)
-			// formStruct := NewFormStruct[view.WalkForm](params)
-
-			// TODO - actually save the walk
-
-			// TODO - form helpers to render values back to the form
-			// walkForm := &view.WalkForm{
-			// 	Duration:        fmt.Sprint(parsedParams.Walk.Duration),
-			// 	DistanceInMiles: fmt.Sprint(parsedParams.Walk.DistanceInMiles),
-			// }
-
-			// formData := newWalkForm.Load(map[string]any{"duration": parsedParams.Walk.Duration, "distance_in_miles": parsedParams.Walk.DistanceInMiles})
-
-			// return view.ApplicationLayout(view.WalksNew(walkForm, formData)).Render(r.Context(), w)
 
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return nil
