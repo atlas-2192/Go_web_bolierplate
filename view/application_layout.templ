@@ -1,26 +1,25 @@
 package view
 
 templ ApplicationLayout(body templ.Component) {
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <title>web-starter-app</title>
-
-      <!-- TODO - proper paths in development and production -->
-      <script type="module" src="/assets/@vite/client"></script>
-      <script type="module" src="/assets/main.js"></script>
-      <link rel="stylesheet" href="/assets/main.css" />
-
-    </head>
-    <body>
-      <header>
-        <nav>
-          <a href="/">Home</a>
-        </nav>
-      </header>
-      <main>
-        @body
-      </main>
-    </body>
-  </html>
+	<!DOCTYPE html>
+	<html>
+		<head>
+			<title>web-starter-app</title>
+			if viteHotReload(ctx) {
+				<script type="module" src="/assets/@vite/client"></script>
+			}
+			<script type="module" src={ assetPath(ctx, "main.js") }></script>
+			<link rel="stylesheet" href={ assetPath(ctx, "main.css") }/>
+		</head>
+		<body>
+			<header>
+				<nav>
+					<a href="/">Home</a>
+				</nav>
+			</header>
+			<main>
+				@body
+			</main>
+		</body>
+	</html>
 }

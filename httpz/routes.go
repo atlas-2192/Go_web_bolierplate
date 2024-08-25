@@ -31,6 +31,7 @@ func NewHandler(
 	secureCookies bool,
 	cookieAuthenticationKey []byte,
 	cookieEncryptionKey []byte,
+	assetManifest map[string]string,
 ) (http.Handler, error) {
 
 	router := chi.NewRouter()
@@ -67,6 +68,14 @@ func NewHandler(
 	router.Use(middleware.Recoverer)
 
 	router.Use(setContextValue(ctxKeyEnvironment, env))
+
+	viewEnvironment := &view.Environment{
+		AssetManifest: assetManifest,
+	}
+	if assetManifest == nil {
+		viewEnvironment.ViteHotReload = true
+	}
+	router.Use(setContextValue(view.EnvironmentCtxKey, viewEnvironment))
 
 	CSRF := csrf.Protect(csrfKey, csrf.Path("/"), csrf.Secure(secureCookies))
 	router.Use(CSRF)

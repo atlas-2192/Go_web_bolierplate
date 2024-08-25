@@ -38,11 +38,12 @@ export default defineConfig({
     },
   },
   build: {
-    // generate .vite/manifest.json in outDir
     manifest: true,
     rollupOptions: {
-      // overwrite default .html entry
-      input: "/js/main.js",
+      input: {
+        "js/main.js": "src/main.js",
+        "css/main.css": "src/main.css"
+      }
     },
   },
   plugins: [

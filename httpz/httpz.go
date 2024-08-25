@@ -30,7 +30,7 @@ type environment struct {
 }
 
 // setContextValue returns a middleware handler that sets a value in the request context.
-func setContextValue(key ctxRequestKey, value any) func(http.Handler) http.Handler {
+func setContextValue(key any, value any) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()

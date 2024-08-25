@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"crypto/sha512"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -60,6 +61,35 @@ var serveCmd = &cobra.Command{
 		logger := setupLogger(logFormat)
 		dbpool := setupPGXConnPool(processCtx, databaseURL, logger)
 
+		loadManifest := func(path string) (map[string]string, error) {
+			manifestBytes, err := os.ReadFile(path)
+			if err != nil {
+				return nil, fmt.Errorf("LoadManifest: %w", err)
+			}
+
+			var manifest map[string]any
+			err = json.Unmarshal(manifestBytes, &manifest)
+			if err != nil {
+				return nil, fmt.Errorf("LoadManifest %s: %w", path, err)
+			}
+
+			assetMap := make(map[string]string, len(manifest))
+			for k, v := range manifest {
+				assetMap[k] = v.(map[string]any)["file"].(string)
+			}
+
+			return assetMap, nil
+		}
+
+		var assetManifest map[string]string
+		if assetManifestPath := serveEnvconf.Value("ASSET_MANIFEST"); assetManifestPath != "" {
+			assetManifest, err = loadManifest(assetManifestPath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Could not load asset manifest: %s\n", err)
+				os.Exit(1)
+			}
+		}
+
 		// Listen for shutdown signals. When a signal is received, cancel the processCtx.
 		interruptChan := make(chan os.Signal, 1)
 		signal.Notify(interruptChan, shutdownSignals...)
@@ -82,6 +112,7 @@ var serveCmd = &cobra.Command{
 				cookieSecure,
 				cookieAuthenticationKey,
 				cookieEncryptionKey,
+				assetManifest,
 			)
 			if err != nil {
 				zerolog.Ctx(processCtx).Fatal().Err(err).Msg("Could not create HTTP app handler")
@@ -128,6 +159,7 @@ func init() {
 	serveEnvconf.Register(envconf.Item{Name: "COOKIE_SECURE", Default: "true", Description: "Set the Secure flag on cookies"})
 	serveEnvconf.Register(envconf.Item{Name: "COOKIE_AUTHENTICATION_KEY", Default: "", Description: "Key to protect cookies from tampering"})
 	serveEnvconf.Register(envconf.Item{Name: "COOKIE_ENCRYPTION_KEY", Default: "", Description: "Key to protect cookies from being readable by the client"})
+	serveEnvconf.Register(envconf.Item{Name: "ASSET_MANIFEST", Default: "", Description: "Path to the asset manifest file"})
 
 	long := &strings.Builder{}
 	long.WriteString("Run the server.\n\nConfigure with the following environment variables:\n\n")
