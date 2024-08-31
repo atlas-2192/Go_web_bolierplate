@@ -76,7 +76,7 @@ file "bin/setup_test_databases" => FileList["devtools/setup_test_databases/**/*.
 end
 
 desc "Perform all preparation necessary to run tests"
-task "test:prepare" => [:build, "tmp/test/.databases-prepared"]
+task "test:prepare" => ["build:development", "tmp/test/.databases-prepared"]
 
 desc "Run all tests"
 task test: "test:prepare" do
