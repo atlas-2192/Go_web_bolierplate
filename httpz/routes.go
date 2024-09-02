@@ -172,7 +172,7 @@ func NewHandler(
 			}
 		}
 
-		return view.ApplicationLayout(view.Hello(csrf.Token(r), name, now, walkRecords)).Render(r.Context(), w)
+		return view.ApplicationLayout(view.Home(csrf.Token(r), name, now, walkRecords)).Render(r.Context(), w)
 	}))
 
 	newWalkForm := &formdata.Form{
