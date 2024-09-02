@@ -75,7 +75,7 @@ where user_id = $1`,
 
 	passwordDigest := argon2.IDKey([]byte(password), salt, iterations, minMemory, parallelism, argon2DefaultKeyLen)
 
-	if subtle.ConstantTimeCompare(digest, passwordDigest) != 0 {
+	if subtle.ConstantTimeCompare(digest, passwordDigest) != 1 {
 		return ErrPasswordIncorrect
 	}
 

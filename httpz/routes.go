@@ -109,6 +109,13 @@ func NewHandler(
 			return err
 		}
 
+		err = db.ValidateUserPassword(ctx, env.dbpool, user.ID, r.FormValue("password"))
+		if err != nil {
+			// TODO - rerender form
+			http.Error(w, "invalid password", http.StatusUnauthorized)
+			return nil
+		}
+
 		now := time.Now()
 		loginSessionID, err := pgxutil.InsertRowReturning(ctx, env.dbpool, "login_sessions", map[string]any{
 			"id":                            uuid.Must(uuid.NewV7()),
