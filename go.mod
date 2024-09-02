@@ -3,10 +3,10 @@ module github.com/jackc/web-starter-app
 go 1.23
 
 require (
-	github.com/a-h/templ v0.2.747
+	github.com/a-h/templ v0.2.771
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-rod/rod v0.116.2
-	github.com/gofrs/uuid/v5 v5.2.0
+	github.com/gofrs/uuid/v5 v5.3.0
 	github.com/gorilla/csrf v1.7.2
 	github.com/gorilla/securecookie v1.1.2
 	github.com/jackc/envconf v0.0.0-20240602124909-416ddece9883
@@ -20,7 +20,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.26.0
 	golang.org/x/sync v0.8.0
-	golang.org/x/sys v0.23.0
+	golang.org/x/sys v0.24.0
 )
 
 require (
@@ -33,7 +33,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
-	github.com/rs/xid v1.5.0 // indirect
+	github.com/rs/xid v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/ysmood/fetchup v0.2.4 // indirect
 	github.com/ysmood/goob v0.4.0 // indirect
