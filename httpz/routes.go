@@ -231,5 +231,59 @@ func NewHandler(
 		})
 	}())
 
+	resetPasswordForm := &formdata.Form{
+		Fields: []*formdata.Field{
+			{
+				Label:    "Current Password",
+				Name:     "current_password",
+				Type:     "password",
+				Required: true,
+			},
+			{
+				Label:    "New Password",
+				Name:     "new_password",
+				Type:     "password",
+				Required: true,
+			},
+		},
+	}
+
+	router.Method("GET", "/change_password", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+		loginSession := getLoginSession(ctx)
+		if loginSession.User == nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return nil
+		}
+
+		formData := resetPasswordForm.New()
+
+		return view.ApplicationLayout(view.ChangePassword(formData)).Render(r.Context(), w)
+	}))
+
+	router.Method("POST", "/change_password", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+		loginSession := getLoginSession(ctx)
+		if loginSession.User == nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return nil
+		}
+
+		formData := resetPasswordForm.Parse(params)
+
+		err := db.ValidateUserPassword(ctx, env.dbpool, loginSession.User.ID, formData.FieldValues["current_password"].Value.(string))
+		if err != nil {
+			// TODO - rerender form
+			http.Error(w, "invalid password", http.StatusUnauthorized)
+			return nil
+		}
+
+		err = db.SetUserPassword(ctx, env.dbpool, loginSession.User.ID, formData.FieldValues["new_password"].Value.(string))
+		if err != nil {
+			return err
+		}
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return nil
+	}))
+
 	return router, nil
 }

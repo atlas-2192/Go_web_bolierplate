@@ -17,6 +17,14 @@ func formattedValue(fieldData *formdata.FieldData) string {
   return fmt.Sprint(fieldData.Value)
 }
 
+func inputType(field *formdata.Field) string {
+  if field.Type == "password" {
+    return "password"
+  }
+
+  return "text"
+}
+
 templ VerticalLabeledForm(formData *formdata.FormData) {
   for _, field := range formData.Form.Fields {
     <div class="mt-4">
@@ -29,7 +37,7 @@ templ VerticalLabeledForm(formData *formdata.FormData) {
       <input
         id={field.Name}
         class="border"
-        type="text"
+        type={inputType(field)}
         name={field.Name}
         value={formattedValue(formData.FieldValues[field.Name])}
         required?={field.Required}

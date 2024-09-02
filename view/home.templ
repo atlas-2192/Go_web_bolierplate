@@ -15,6 +15,7 @@ templ Home(name string, now time.Time, walkRecords []*HomeWalkRecord) {
 	<div>Hello, { name }!</div>
 	<div>It is { now.Format("15:04:05") } in the database.</div>
 	<a href="/walks/new">New walk</a>
+	<a href="/change_password">Change Password</a>
 	<table>
 		<thead>
 			<tr>

@@ -57,6 +57,8 @@ func (f *Form) Parse(params map[string]any) *FormData {
 		if submittedValue, ok := params[field.Name].(string); ok {
 			fieldData.SubmittedValue = submittedValue
 			switch field.Type {
+			case "text", "longtext", "password":
+				fieldData.Value = submittedValue
 			case "duration":
 				value, err := time.ParseDuration(submittedValue)
 				if err != nil {
@@ -71,6 +73,8 @@ func (f *Form) Parse(params map[string]any) *FormData {
 				} else {
 					fieldData.Value = value
 				}
+			default:
+				panic("unknown field type")
 			}
 		}
 		fd.FieldValues[field.Name] = fieldData
