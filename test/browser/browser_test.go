@@ -79,6 +79,7 @@ func startServer(t *testing.T) *serverInstanceT {
 		false,
 		cookieAuthenticationKey,
 		cookieEncryptionKey,
+		nil, // nil manifest means that the vite server must be running
 	)
 	require.NoError(t, err)
 
