@@ -156,13 +156,13 @@ func NewHandler(
 			return err
 		}
 
-		var name string
 		loginSession := getLoginSession(ctx)
-		if loginSession.User != nil {
-			name = loginSession.User.Username
-		} else {
-			name = "world"
+		if loginSession.User == nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return nil
 		}
+
+		name := loginSession.User.Username
 
 		var walkRecords []*view.HomeWalkRecord
 		if loginSession.User != nil {
@@ -196,6 +196,7 @@ func NewHandler(
 		loginSession := getLoginSession(ctx)
 		if loginSession.User == nil {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return nil
 		}
 
 		formData := newWalkForm.New()
@@ -208,6 +209,7 @@ func NewHandler(
 			loginSession := getLoginSession(ctx)
 			if loginSession.User == nil {
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
+				return nil
 			}
 
 			formData := newWalkForm.Parse(params)
