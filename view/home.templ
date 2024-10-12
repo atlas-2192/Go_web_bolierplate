@@ -14,8 +14,8 @@ type HomeWalkRecord struct {
 templ Home(name string, now time.Time, walkRecords []*HomeWalkRecord) {
 	<div>Hello, { name }!</div>
 	<div>It is { now.Format("15:04:05") } in the database.</div>
-	<a href="/walks/new">New walk</a>
-	<a href="/change_password">Change Password</a>
+	<a href="/walks/new" class="link">New walk</a>
+	<a href="/change_password" class="link">Change Password</a>
 	<table>
 		<thead>
 			<tr>
@@ -34,8 +34,9 @@ templ Home(name string, now time.Time, walkRecords []*HomeWalkRecord) {
 			}
 		</tbody>
 	</table>
+  <a href="/system/users" class="link">Users</a>
 	<form action="/logout" method="post">
 		<input type="hidden" name="gorilla.csrf.Token" value={ csrfToken(ctx) }/>
-		<button type="submit">Logout</button>
+		<button type="submit" class="link">Logout</button>
 	</form>
 }
