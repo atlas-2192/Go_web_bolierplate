@@ -73,6 +73,13 @@ func (f *Form) Parse(params map[string]any) *FormData {
 				} else {
 					fieldData.Value = value
 				}
+			case "bool":
+				value, err := strconv.ParseBool(submittedValue)
+				if err != nil {
+					fieldData.Error = err.Error()
+				} else {
+					fieldData.Value = value
+				}
 			default:
 				panic("unknown field type")
 			}

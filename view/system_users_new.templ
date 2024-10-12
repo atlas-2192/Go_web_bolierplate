@@ -1,0 +1,13 @@
+package view
+
+import (
+	"github.com/jackc/web-starter-app/lib/formdata"
+)
+
+templ SystemUsersNewPage(formData *formdata.FormData) {
+  <form method="post" action="/system/users">
+    <input type="hidden" name="gorilla.csrf.Token" value={csrfToken(ctx)} />
+    @VerticalLabeledForm(formData)
+    @button("Save", templ.Attributes{"type": "submit"})
+  </form>
+}

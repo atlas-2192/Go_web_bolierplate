@@ -1,0 +1,27 @@
+package view
+
+import "github.com/gofrs/uuid/v5"
+
+type SystemUsersPageUser struct {
+  ID uuid.UUID
+  Username string
+  System bool
+}
+
+templ SystemUsersPage(users []SystemUsersPageUser) {
+  <a href="/system/users/new" class="link">New User</a>
+
+  for _, user := range users {
+    <div>
+      <span>{user.Username}</span>
+      <span>
+        if user.System {
+          System
+        } else {
+          User
+        }
+      </span>
+      <a href={ templ.SafeURL("/system/users/" + user.ID.String()) } class="link">Show</a>
+    </div>
+  }
+}

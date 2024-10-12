@@ -1,0 +1,15 @@
+package view
+
+import (
+	"github.com/gofrs/uuid/v5"
+	"github.com/jackc/web-starter-app/lib/formdata"
+)
+
+templ SystemUsersEditPage(id uuid.UUID, formData *formdata.FormData) {
+  <form method="post" action={templ.SafeURL("/system/users/" + id.String() + "/update")} >
+    <input type="hidden" name="gorilla.csrf.Token" value={csrfToken(ctx)} />
+    <input type="hidden" name="_method" value="PATCH" />
+    @VerticalLabeledForm(formData)
+    @button("Save", templ.Attributes{"type": "submit"})
+  </form>
+}

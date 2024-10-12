@@ -3,6 +3,7 @@ package httpz
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -284,6 +285,129 @@ func NewHandler(
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return nil
 	}))
+
+	router.Route("/system", func(router chi.Router) {
+		router.Use(requireSystemUserHandler("/login"))
+
+		router.Method("GET", "/users", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+			users, err := pgxutil.Select(ctx, env.dbpool, "select id, username, system from users order by username", nil, pgx.RowToStructByPos[view.SystemUsersPageUser])
+			if err != nil {
+				return err
+			}
+
+			return view.ApplicationLayout(view.SystemUsersPage(users)).Render(r.Context(), w)
+		}))
+
+		newUserForm := &formdata.Form{
+			Fields: []*formdata.Field{
+				{
+					Label:    "Username",
+					Name:     "username",
+					Type:     "text",
+					Required: true,
+				},
+				{
+					Label: "System",
+					Name:  "system",
+					Type:  "bool",
+				},
+			},
+		}
+
+		router.Method("GET", "/users/new", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+			formData := newUserForm.New()
+			return view.ApplicationLayout(view.SystemUsersNewPage(formData)).Render(r.Context(), w)
+		}))
+
+		router.Method("POST", "/users", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+			formData := newUserForm.Parse(params)
+
+			userID := uuid.Must(uuid.NewV7())
+			err := pgxutil.InsertRow(ctx, env.dbpool, "users", map[string]any{
+				"id":       userID,
+				"username": formData.FieldValues["username"].Value,
+				"system":   formData.FieldValues["system"].Value,
+			})
+			if err != nil {
+				return err
+			}
+
+			// TODO - render error
+
+			http.Redirect(w, r, "/system/users", http.StatusSeeOther)
+			return nil
+
+		}))
+
+		router.Method("GET", "/users/{id}", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+			userID, err := uuid.FromString(params["id"].(string))
+			if err != nil {
+				return err
+			}
+			user, err := pgxutil.SelectRow(ctx, env.dbpool, "select id, username, system from users where id = $1", []any{userID}, pgx.RowToAddrOfStructByPos[view.SystemUsersPageUser])
+			if err != nil {
+				return err
+			}
+
+			return view.ApplicationLayout(view.SystemUsersShowPage(user)).Render(r.Context(), w)
+		}))
+
+		router.Method("GET", "/users/{id}/edit", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+			userID, err := uuid.FromString(params["id"].(string))
+			if err != nil {
+				return err
+			}
+			userAttrs, err := pgxutil.SelectRow(ctx, env.dbpool, "select username, system from users where id = $1", []any{userID}, pgx.RowToMap)
+			if err != nil {
+				return err
+			}
+
+			formData := newUserForm.Load(userAttrs)
+			return view.ApplicationLayout(view.SystemUsersEditPage(userID, formData)).Render(r.Context(), w)
+		}))
+
+		router.Method("POST", "/users/{id}/update", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+			userID, err := uuid.FromString(params["id"].(string))
+			if err != nil {
+				return err
+			}
+
+			formData := newUserForm.Parse(params)
+			if len(formData.Errors) > 0 {
+				return fmt.Errorf("form errors: %v", formData.Errors)
+			}
+
+			err = pgxutil.UpdateRow(ctx, env.dbpool, "users", map[string]any{
+				"username": formData.FieldValues["username"].Value,
+				"system":   formData.FieldValues["system"].Value,
+			}, map[string]any{
+				"id": userID,
+			})
+			if err != nil {
+				return err
+			}
+
+			// TODO handle validation errors
+
+			http.Redirect(w, r, "/system/users", http.StatusSeeOther)
+			return nil
+		}))
+
+		router.Method("POST", "/users/{id}/delete", hb.New(func(ctx context.Context, w http.ResponseWriter, r *http.Request, env *environment, params map[string]any) error {
+			userID, err := uuid.FromString(params["id"].(string))
+			if err != nil {
+				return err
+			}
+
+			_, err = pgxutil.ExecRow(ctx, env.dbpool, "delete from users where id = $1", userID)
+			if err != nil {
+				return err
+			}
+
+			http.Redirect(w, r, "/system/users", http.StatusSeeOther)
+			return nil
+		}))
+	})
 
 	return router, nil
 }

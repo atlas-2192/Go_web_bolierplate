@@ -14,6 +14,7 @@ import (
 type RequestUser struct {
 	ID       uuid.UUID
 	Username string
+	System   bool
 }
 
 type RequestLoginSession struct {
@@ -53,12 +54,12 @@ func loginSessionHandler() func(http.Handler) http.Handler {
 
 			user := &RequestUser{}
 			err = env.dbpool.QueryRow(ctx,
-				`select login_sessions.id, users.id, users.username
+				`select login_sessions.id, users.id, users.username, users.system
 from login_sessions
 	join users on login_sessions.user_id=users.id
 where login_sessions.id=$1`,
 				loginSessionID,
-			).Scan(&loginSession.ID, &user.ID, &user.Username)
+			).Scan(&loginSession.ID, &user.ID, &user.Username, &user.System)
 			if err != nil {
 				if errors.Is(err, pgx.ErrNoRows) {
 					// invalid session ID
@@ -107,4 +108,41 @@ func clearLoginSessionCookie(w http.ResponseWriter, r *http.Request) {
 // getLoginSession returns the login session from the request context.
 func getLoginSession(ctx context.Context) *RequestLoginSession {
 	return ctx.Value(ctxKeySession).(*RequestLoginSession)
+}
+
+// requireCurrentUserHandler returns a middleware handler that redirects to redirectURL if there is no current user.
+func requireCurrentUserHandler(redirectURL string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			loginSession := getLoginSession(ctx)
+			if loginSession.User == nil {
+				http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		}
+
+		return http.HandlerFunc(fn)
+	}
+}
+
+// requireSystemUserHandler returns a middleware handler that redirects to redirectURL if there is no current user or the
+// user is not a system user.
+func requireSystemUserHandler(redirectURL string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			loginSession := getLoginSession(ctx)
+			if loginSession.User == nil || !loginSession.User.System {
+				http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		}
+
+		return http.HandlerFunc(fn)
+	}
 }

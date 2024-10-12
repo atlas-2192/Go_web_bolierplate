@@ -18,11 +18,12 @@ func formattedValue(fieldData *formdata.FieldData) string {
 }
 
 func inputType(field *formdata.Field) string {
-  if field.Type == "password" {
-    return "password"
+  switch field.Type {
+    case "password":
+      return "password"
+    default:
+      return "text"
   }
-
-  return "text"
 }
 
 templ VerticalLabeledForm(formData *formdata.FormData) {
